@@ -15,6 +15,16 @@
 
 ---
 
+## Why
+
+AI agents jump straight to code. But most failures come from building the wrong thing — not building it wrong. AWRSHIFT makes your agent research, evaluate, and document decisions before writing a single line. Three modes adapt to task complexity: Quick (just do it), Standard (research first), Scientific (test hypotheses).
+
+<div align="center">
+<img src="assets/flow-diagram.png" alt="AWRSHIFT Flow: Quick, Standard, and Scientific modes" width="800" />
+</div>
+
+---
+
 ## What It Does
 
 - **Selects the right mode** automatically — Quick (trivial tasks), Standard (research needed), Scientific (competing hypotheses)
@@ -82,6 +92,16 @@ experiments/{NNN}-{slug}/
 └── {NN}-compile.md        ← Synthesized results
 ```
 
+## Real Example
+
+Here's what AWRSHIFT produced for a real decision — choosing how to distribute Claude Code skills:
+
+<div align="center">
+<img src="assets/example-output.png" alt="EXPERIMENT.md output from a real AWRSHIFT session" width="600" />
+</div>
+
+The skill created an experiment, dispatched 3 parallel research agents, compiled findings, and arrived at a concrete GO decision — all documented in structured markdown files.
+
 ## Key Principles
 
 1. **Always identify before solving** — state the problem before writing code
@@ -111,7 +131,7 @@ experiments/{NNN}-{slug}/
 
 - [**AWRSHIFT Framework**](https://github.com/awrshift/awrshift) — the full methodology + Claude Code integration
 - [**ClawClaw Soul**](https://clawclawsoul.com) — persistent identity protocol for AI agents
-- [**skill-brainstorm**](https://github.com/awrshift/skill-brainstorm) — multi-model brainstorm (Claude x Gemini) *(coming soon)*
+- [**skill-brainstorm**](https://github.com/awrshift/skill-brainstorm) — multi-model brainstorm (Claude x Gemini)
 
 ## Contributing
 

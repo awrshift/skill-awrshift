@@ -1,0 +1,32 @@
+{
+  "name": "awrshift-skills",
+  "owner": {
+    "name": "Serhii Kravchenko",
+    "email": "awrshift@proton.me"
+  },
+  "metadata": {
+    "description": "AWRSHIFT — adaptive decision-making framework for AI agents. Think before you build.",
+    "version": "1.0.0",
+    "homepage": "https://github.com/awrshift/skill-awrshift"
+  },
+  "plugins": [
+    {
+      "name": "awrshift",
+      "description": "Dynamic decision-making framework that adapts to task complexity. Automatically selects Quick, Standard, or Scientific mode. Use when you face a non-trivial decision, need to research before building, plan a feature or experiment, or the user says 'awrshift', 'think this through', 'research first', 'experiment', 'compare options'.",
+      "source": "./",
+      "strict": false,
+      "version": "1.0.0",
+      "category": "productivity",
+      "keywords": [
+        "decision-making",
+        "research",
+        "planning",
+        "framework",
+        "experiments"
+      ],
+      "skills": [
+        "./skills/awrshift"
+      ]
+    }
+  ]
+}

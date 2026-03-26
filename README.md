@@ -43,7 +43,7 @@ AI agents jump straight to code. But most failures come from building the wrong 
 **Manual (any agent):**
 ```bash
 mkdir -p .claude/skills/awrshift
-curl -sL https://raw.githubusercontent.com/awrshift/skill-awrshift/main/skills/awrshift/SKILL.md \
+curl -sL https://raw.githubusercontent.com/awrshift/skill-awrshift/main/SKILL.md \
   -o .claude/skills/awrshift/SKILL.md
 ```
 

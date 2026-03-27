@@ -5,9 +5,9 @@
 ![Gemini CLI](https://img.shields.io/badge/Gemini%20CLI-4285F4?style=for-the-badge&logo=google&logoColor=white)
 ![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 
-# AWRSHIFT
+# AWRSHIFT v2
 
-**Adaptive decision-making framework for AI agents. Think before you build.**
+**Adaptive decision framework for AI agents. User checkpoints at every phase.**
 
 *Works with any AI coding assistant that supports [Agent Skills](https://agentskills.io)*
 
@@ -17,127 +17,112 @@
 
 ## Why
 
-AI agents jump straight to code. But most failures come from building the wrong thing — not building it wrong. AWRSHIFT makes your agent research, evaluate, and document decisions before writing a single line. Three modes adapt to task complexity: Quick (just do it), Standard (research first), Scientific (test hypotheses).
+AI agents jump to implementation. Most failures come from building the wrong thing. AWRSHIFT makes your agent research, define metrics, factcheck, and test in a sandbox — all before touching your main project. One dynamic flow adapts to any task complexity.
 
 <div align="center">
-<img src="assets/flow-diagram.png" alt="AWRSHIFT Flow: Quick, Standard, and Scientific modes" width="800" />
+<img src="assets/flow-diagram.png" alt="AWRSHIFT v2 Flow" width="800" />
 </div>
 
 ---
 
-## What It Does
+## What's New in v2
 
-- **Selects the right mode** automatically — Quick (trivial tasks), Standard (research needed), Scientific (competing hypotheses)
-- **Creates experiment files** with structured phases, research artifacts, and decision records
-- **Dispatches parallel research agents** for independent questions — no sequential bottleneck
-- **Integrates with brainstorm & gemini** skills for multi-model ideation and fact-checking
-- **Adapts dynamically** — skips phases that add no value, expands when findings are insufficient
+| v1.0 | v2.0 |
+|------|------|
+| 3 modes (Quick/Standard/Scientific) | **1 dynamic flow** — scope adapts per phase |
+| Text-based questions | **AskUserQuestion** — structured A/B/C/D choices at every checkpoint |
+| No metrics phase | **EVALUATE-DESIGN** — mandatory success criteria before planning |
+| Factcheck only in Scientific | **FACTCHECK** — mandatory for all scopes |
+| No sandbox rules | **10 safety rules** — experiment sandbox is isolated from main project |
+| No implementation gate | **Double gate** — DECIDE(GO) + file-by-file preview before touching main project |
+
+## How It Works
+
+One flow. User controls depth.
+
+```
+IDENTIFY → RESEARCH → EVALUATE-DESIGN → HYPOTHESIZE → PLAN → FACTCHECK → TEST → DECIDE → [IMPLEMENT]
+```
+
+At **every phase transition**, the agent:
+1. Tells you what was done
+2. Explains what happens next
+3. Asks you to choose (A/B/C/D or your own direction)
+
+You're always in control. The agent never proceeds silently.
 
 ## Quick Install
 
-**Claude Code (recommended):**
-```
-/plugin marketplace add awrshift/skill-awrshift
-```
-
-**Manual (any agent):**
+**Claude Code:**
 ```bash
 mkdir -p .claude/skills/awrshift
 curl -sL https://raw.githubusercontent.com/awrshift/skill-awrshift/main/SKILL.md \
   -o .claude/skills/awrshift/SKILL.md
 ```
 
-## How It Works
-
-The framework has three modes. It picks one automatically based on task complexity.
-
-### Quick Mode
-```
-IDENTIFY → IMPLEMENT → TEST → DONE
-```
-For clear tasks with no unknowns. No experiment file needed.
-
-### Standard Mode
-```
-IDENTIFY → FORMULATE → RESEARCH → COMPILE → PLAN → IMPLEMENT → TEST → EVALUATE → DECIDE
-```
-For tasks with multiple approaches. Creates an experiment file, uses parallel research agents.
-
-### Scientific Mode
-```
-IDENTIFY → FORMULATE → RESEARCH → HYPOTHESIZE → [H1: test] → [H2: test] → COMPARE → DECIDE
-```
-For high-stakes decisions with competing hypotheses. Adds Gemini fact-check gates.
-
 ## Usage
 
 | You say | AWRSHIFT does |
 |---------|--------------|
-| "Let's think this through" | Activates Standard mode, creates experiment |
-| "Research first" | FORMULATE phase — generates questions, asks you to validate |
-| "Compare these two approaches" | Scientific mode with hypothesis testing |
-| "What's the best approach for X?" | IDENTIFY + mode selection based on complexity |
-| "Experiment" | Creates experiment file, starts IDENTIFY phase |
+| "Let's think this through" | Starts IDENTIFY — asks structured questions one by one |
+| "Research first" | RESEARCH phase — generates questions, asks you to validate, dispatches agents |
+| "Compare approaches" | HYPOTHESIZE — names options, presents comparison table |
+| "What metrics should we use?" | EVALUATE-DESIGN — proposes measurable success criteria |
+| "Factcheck this plan" | FACTCHECK — verifies plan against original context + optional Gemini |
+| "Experiment on [topic]" | Creates experiment folder, starts full flow |
 
 ## Experiment Structure
 
-Every Standard/Scientific task creates persistent documentation:
+Every experiment creates persistent documentation in your project:
 
 ```
-experiments/{NNN}-{slug}/
-├── EXPERIMENT.md          ← Status, phases, decisions
+experiments/{NNN}-{short-name}/
+├── PLAN.md              ← Status, phases, metrics, decisions
 ├── research/
-│   ├── 01-{topic}.md      ← Agent findings
-│   └── ...
-└── {NN}-compile.md        ← Synthesized results
+│   └── 01-{topic}.md    ← Agent findings
+├── factcheck.md         ← Verification results
+└── [artifacts]           ← Code, configs, outputs
 ```
 
-## Real Example
+## Sandbox Safety
 
-Here's what AWRSHIFT produced for a real decision — choosing how to distribute Claude Code skills:
+During experiments, the agent NEVER modifies your main project files:
+- All work happens in `experiments/` folder
+- Main project files are read-only (for context)
+- Only after DECIDE(GO) + your explicit approval → changes proposed to main project
+- You see exact file list before any modification
 
-<div align="center">
-<img src="assets/example-output.png" alt="EXPERIMENT.md output from a real AWRSHIFT session" width="600" />
-</div>
+## Integration
 
-The skill created an experiment, dispatched 3 parallel research agents, compiled findings, and arrived at a concrete GO decision — all documented in structured markdown files.
+| Skill | When | Purpose |
+|-------|------|---------|
+| **brainstorm** | HYPOTHESIZE phase | Multi-model ideation (Claude x Gemini) |
+| **gemini** | FACTCHECK phase | Cross-model verification |
+
+Both optional. Framework works standalone.
 
 ## Key Principles
 
-1. **Always identify before solving** — state the problem before writing code
-2. **Research before planning** — unknowns kill plans
-3. **Document decisions inline** — no separate ADR files, decisions live in EXPERIMENT.md
-4. **One experiment = one topic** — no mixing concerns
-5. **Every experiment ends with DECIDE** — GO / NO-GO / PIVOT with evidence
+1. **User-in-the-loop** — AskUserQuestion at every phase transition
+2. **Metrics before planning** — define success criteria before building
+3. **Factcheck before testing** — verify plan against evidence
+4. **Sandbox first** — test in experiments/, implement later
+5. **Evidence-based decisions** — GO/NO-GO with measured metrics
 
 ## Works With
 
 | Platform | Install |
 |----------|---------|
-| Claude Code | `/plugin marketplace add awrshift/skill-awrshift` |
+| Claude Code | Copy `SKILL.md` to `.claude/skills/awrshift/` |
 | Codex CLI | Copy `SKILL.md` to `.openai/skills/awrshift/` |
 | Gemini CLI | Copy `SKILL.md` to `.gemini/skills/awrshift/` |
 | Cursor | Copy `SKILL.md` to `.cursor/skills/awrshift/` |
-| Any Agent Skills-compatible tool | Follow [spec](https://agentskills.io) |
-
-## Gotchas
-
-- **Quick mode doesn't create experiment files** — if you want documentation, say "standard mode"
-- **FORMULATE phase asks you questions** — this is intentional. Your context prevents wasted research
-- **Parallel agents need the Agent tool** — if your setup doesn't support subagents, research runs sequentially
-- **Gemini integration requires the `gemini` skill** — needed only for Scientific mode fact-check gates
 
 ## Part of the AWRSHIFT Ecosystem
 
-- [**AWRSHIFT Framework**](https://github.com/awrshift/awrshift) — the full methodology + Claude Code integration
-- [**ClawClaw Soul**](https://clawclawsoul.com) — persistent identity protocol for AI agents
-- [**skill-brainstorm**](https://github.com/awrshift/skill-brainstorm) — multi-model brainstorm (Claude x Gemini)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
+- [**claude-starter-kit**](https://github.com/awrshift/claude-starter-kit) — ready-to-use project structure with memory, hooks, skills
+- [**skill-brainstorm**](https://github.com/awrshift/skill-brainstorm) — 3-round Claude x Gemini adversarial dialogue
+- [**skill-gemini**](https://github.com/awrshift/skill-gemini) — Gemini toolkit for second opinions, images, diagrams
 
 ## License
 
@@ -146,5 +131,5 @@ MIT — see [LICENSE](LICENSE) for details.
 ---
 
 <div align="center">
-<em>Think before you build.</em>
+<em>Think before you build. Research before you code. Decide with evidence.</em>
 </div>

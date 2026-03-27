@@ -63,12 +63,12 @@ Q2: "What does 'done' look like? Desired end state."
 Q3: "What do we already know? Prior research, decisions, constraints?"
 → Options: A) "I have context to share" B) "No prior context" C) "Check project history"
 
-Q4: "What scope fits this task?"
+Q4: "How deep should we go?"
 → Options:
-  A) "Quick investigation — just need an answer" (lightweight)
-  B) "Need a plan with metrics" (standard)
-  C) "Multiple approaches to compare" (deep)
-  D) "Not sure — help me figure it out"
+  A) "Just need a quick answer — minimal research"
+  B) "Need a solid plan with evidence"
+  C) "This is complex — multiple approaches to compare"
+  D) "Not sure yet — let's start and see"
 
 **Step 2 — Produce IDENTIFY summary:**
 ```
@@ -77,7 +77,7 @@ Current: [state now]
 Target: [desired state]
 Gap: [delta]
 Unknowns: [numbered list]
-Scope: [lightweight | standard | deep]
+Initial depth: [user's choice — system adapts dynamically from here]
 ```
 
 **Step 3 — Checkpoint:** Show summary, confirm with user, ask to proceed to RESEARCH.
@@ -93,9 +93,10 @@ Gather evidence before forming opinions.
 **Step 2 — Checkpoint:** Show questions, ask user to validate via AskUserQuestion before dispatching agents.
 
 **Step 3 — Execute research:**
-- Lightweight: 1-2 inline queries
-- Standard: 2-3 parallel agents (Agent tool)
-- Deep: 3-5 agents, save outputs to `experiments/{NNN}/research/`
+Start with 1-2 focused queries. If findings reveal complexity or contradictions, propose expanding:
+- More queries on specific unknowns
+- Parallel agents (Agent tool) for independent topics
+- Save outputs to `experiments/{NNN}/research/` when depth warrants it
 
 **Step 4 — Compile findings:** Synthesize into one document. Highlight confirmed facts, contradictions, remaining unknowns, surprises.
 
@@ -111,10 +112,19 @@ Define HOW to measure success BEFORE planning. Without metrics, evaluation is su
 
 Each metric needs: name, how to measure, target value, why it matters.
 
-**Step 2 — Checkpoint:**
+**Step 2 — Gemini rubric check (standard/deep):**
+Send metrics to Gemini for independent review — catches self-preference bias and edge case vulnerabilities.
+```bash
+python3 ~/.claude/skills/gemini/gemini.py second-opinion \
+  "Review these success metrics for [problem]. Check for: self-preference bias, missing edge cases, unrealistic targets, metrics that can be gamed. Metrics: [table]" \
+  --save experiments/{NNN}/gemini-metrics-review.md
+```
+Incorporate valid critique, discard what lacks context.
+
+**Step 3 — Checkpoint:**
 ```
 AskUserQuestion:
-  question: "Here are success metrics for this experiment: [table]. These will be our criteria at DECIDE phase."
+  question: "Here are success metrics for this experiment: [table]. Gemini review: [summary of critique]. These will be our criteria at DECIDE phase."
   options:
     - "Metrics look good, proceed"
     - "Modify these metrics"
@@ -141,7 +151,17 @@ AskUserQuestion:
     - "Compare 2-3 approaches side by side"
 ```
 
-**If comparing:** Name each hypothesis (H1, H2, H3) with one-sentence description, expected outcome, risk, effort. Present comparison table. Ask user which to plan for.
+**If comparing (2+ hypotheses):**
+Name each hypothesis (H1, H2, H3) with one-sentence description, expected outcome, risk, effort. Present comparison table.
+
+**Gemini falsification (standard/deep with 2+ hypotheses):**
+Send hypotheses to Gemini for adversarial challenge — different model family catches blind spots.
+```bash
+python3 ~/.claude/skills/gemini/gemini.py second-opinion \
+  "Given these hypotheses for [problem]: [H1, H2, H3]. For EACH: give 3 concrete scenarios where it fails or where an alternative outperforms. Also: what are we NOT considering?" \
+  --save experiments/{NNN}/gemini-hypotheses-review.md
+```
+Feed Gemini's critique back into hypothesis comparison. Ask user which to plan for.
 
 ---
 
@@ -164,28 +184,32 @@ Concrete implementation plan with sequenced tasks.
 
 Verify plan against original context and research BEFORE execution.
 
-**Self-check (always):**
+**Step 1 — Self-check (always):**
 - Does plan address the problem from IDENTIFY?
 - Does plan use evidence from RESEARCH?
 - Does plan address all metrics from EVALUATE-DESIGN?
 - Does plan respect project constraints?
+- What could break? What assumptions are untested?
 
-**Cross-model check (optional, recommended for standard/deep):**
-If `gemini` skill available:
+**Step 2 — Gemini cross-check (standard/deep — mandatory):**
+Different model family catches blind spots Claude misses. Write plan summary + context to temp file, send to Gemini:
 ```bash
 python3 ~/.claude/skills/gemini/gemini.py second-opinion @factcheck-prompt.txt \
-  --save experiments/{NNN}/factcheck-gemini.md
+  --save experiments/{NNN}/gemini-factcheck.md
 ```
+Prompt pattern: "Here's our plan for [problem]. Context: [IDENTIFY summary + RESEARCH findings]. Plan: [tasks]. Check for: missed risks, wrong assumptions, implementation complexity we're underestimating, better alternatives we haven't considered."
 
-**Checkpoint:**
+Critically evaluate Gemini's response — accept unique insights, reject when it lacks project context.
+
+**Step 3 — Checkpoint:**
 ```
 AskUserQuestion:
-  question: "Factcheck complete. [N issues found]. [summary]"
+  question: "Factcheck complete. Self-check: [summary]. Gemini review: [key points]. [N issues total]."
   options:
     - "Issues are minor, proceed to TEST"
     - "Fix issues and re-check"
     - "Critical issue — revise PLAN"
-    - "Get Gemini second opinion"
+    - "Show me full Gemini review"
 ```
 
 ---
@@ -300,7 +324,6 @@ experiments/{NNN}-{short-name}/
 
 **Status:** {IDENTIFY | RESEARCH | EVALUATE-DESIGN | HYPOTHESIZE | PLAN | FACTCHECK | TEST | DECIDE | DONE (GO/NO-GO/PIVOT)}
 **Started:** {date}
-**Scope:** {lightweight | standard | deep}
 
 ## Problem
 {From IDENTIFY}
@@ -330,35 +353,43 @@ Continue from highest existing number in `experiments/`. Check before creating.
 
 ## Integration with Other Skills
 
-### brainstorm (optional)
-**When:** HYPOTHESIZE phase, multiple viable paths.
+### gemini (built-in)
+Gemini second-opinion is embedded in 3 phases: EVALUATE-DESIGN (rubric check), HYPOTHESIZE (falsification), FACTCHECK (cross-check). See each phase for exact prompts.
+```bash
+python3 ~/.claude/skills/gemini/gemini.py second-opinion "prompt" --save result.md
+```
+If gemini skill is not installed, fall back to self-check only and note it in experiment documentation.
+
+### brainstorm (on demand)
+**When:** HYPOTHESIZE phase, user wants multi-round Claude x Gemini dialogue.
 **How:** Offer as AskUserQuestion choice: "Brainstorm alternatives with Gemini"
 Brainstorm produces converged recommendation → feed back as hypothesis.
-
-### gemini (optional)
-**When:** FACTCHECK for cross-validation. HYPOTHESIZE for second opinion.
-**How:**
-```bash
-python3 ~/.claude/skills/gemini/gemini.py second-opinion @prompt.txt --save result.md
-```
-
-Neither skill is mandatory. The framework works standalone.
 
 ---
 
 ## Adaptive Behavior
 
-Scope (set at IDENTIFY) influences depth, not structure:
+One mode. The system dynamically adjusts depth at each phase based on complexity discovered along the way. User controls depth via AskUserQuestion choices — not by selecting a "mode" upfront.
 
-| Scope | RESEARCH | HYPOTHESIZE | FACTCHECK | TEST |
-|-------|----------|-------------|-----------|------|
-| Lightweight | 1-2 queries | Skip (single path) | Self-check only | Optional |
-| Standard | 2-3 agents | If multiple paths | Self + optional Gemini | Yes |
-| Deep | 3-5 agents | Always compare | Self + Gemini mandatory | Yes + iterate |
+**How depth adapts dynamically:**
+- RESEARCH: start with 1-2 queries. If findings reveal complexity → ask user to expand to parallel agents
+- HYPOTHESIZE: skip if research shows single clear path. Offer if multiple viable approaches emerge
+- EVALUATE-DESIGN: always propose metrics. Gemini rubric check when metrics are non-trivial
+- FACTCHECK: always self-check. Gemini cross-check when plan involves significant changes
+- TEST: offer sandbox test. Skip if experiment is plan-only or research-only
 
-If research reveals unexpected complexity, propose upgrading scope via AskUserQuestion.
+If complexity escalates mid-experiment, propose upgrading depth via AskUserQuestion. Never silently escalate or silently skip.
 
-**Minimum that NEVER gets skipped (any scope):**
+**Gemini integration points (built into flow):**
+| Phase | Gemini Role | When |
+|-------|------------|------|
+| EVALUATE-DESIGN | Rubric check — catches self-preference bias | When metrics are non-trivial |
+| HYPOTHESIZE | Falsification — stress-tests each hypothesis | When 2+ hypotheses compared |
+| FACTCHECK | Cross-check — different model catches blind spots | When plan involves significant changes |
+
+Gemini output = input for decision-making, NEVER the decision itself. Always critically evaluate: accept unique insights, reject when Gemini lacks project context.
+
+**Minimum that NEVER gets skipped:**
 1. IDENTIFY — define the problem
 2. EVALUATE-DESIGN — define success criteria
 3. PLAN — have a plan before executing

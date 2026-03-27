@@ -112,23 +112,23 @@ Define HOW to measure success BEFORE planning. Without metrics, evaluation is su
 
 Each metric needs: name, how to measure, target value, why it matters.
 
-**Step 2 — Gemini rubric check (standard/deep):**
+**Step 2 — Gemini rubric check:**
 Send metrics to Gemini for independent review — catches self-preference bias and edge case vulnerabilities.
 ```bash
 python3 ~/.claude/skills/gemini/gemini.py second-opinion \
   "Review these success metrics for [problem]. Check for: self-preference bias, missing edge cases, unrealistic targets, metrics that can be gamed. Metrics: [table]" \
   --save experiments/{NNN}/gemini-metrics-review.md
 ```
-Incorporate valid critique, discard what lacks context.
+**Gemini output rule:** Extract 2-3 sentence summary for the checkpoint. Full Gemini response stays in the saved file — user can request it via "Show full review" option.
 
 **Step 3 — Checkpoint:**
 ```
 AskUserQuestion:
-  question: "Here are success metrics for this experiment: [table]. Gemini review: [summary of critique]. These will be our criteria at DECIDE phase."
+  question: "Here are success metrics: [table]. Gemini flagged: [2-3 key points only]. Full review saved to experiments/{NNN}/gemini-metrics-review.md."
   options:
     - "Metrics look good, proceed"
+    - "Show full Gemini review"
     - "Modify these metrics"
-    - "Research what metrics exist in the market for this domain"
     - "Skip formal metrics — I'll evaluate qualitatively"
 ```
 
@@ -161,7 +161,9 @@ python3 ~/.claude/skills/gemini/gemini.py second-opinion \
   "Given these hypotheses for [problem]: [H1, H2, H3]. For EACH: give 3 concrete scenarios where it fails or where an alternative outperforms. Also: what are we NOT considering?" \
   --save experiments/{NNN}/gemini-hypotheses-review.md
 ```
-Feed Gemini's critique back into hypothesis comparison. Ask user which to plan for.
+**Gemini output rule:** Extract 2-3 key failure scenarios per hypothesis for the checkpoint. Full response stays in saved file.
+
+Feed Gemini's key critique points into hypothesis comparison table. Ask user which to plan for.
 
 ---
 
@@ -177,6 +179,16 @@ Concrete implementation plan with sequenced tasks.
 - **Sandbox boundary** — ALL work in `experiments/` folder
 
 **Checkpoint:** Show plan, ask user to proceed to FACTCHECK.
+
+**If user wants to skip FACTCHECK:** Do NOT silently skip. Show a soft warning:
+```
+AskUserQuestion:
+  question: "FACTCHECK catches wrong assumptions and missed risks before you invest time in testing. Skipping means we trust the plan as-is. In past experiments, factcheck caught issues ~60% of the time. Still want to skip?"
+  options:
+    - "Run factcheck anyway (recommended)"
+    - "Skip — I'm confident in the plan"
+    - "Do a quick self-check only, skip Gemini"
+```
 
 ---
 
@@ -201,15 +213,17 @@ Prompt pattern: "Here's our plan for [problem]. Context: [IDENTIFY summary + RES
 
 Critically evaluate Gemini's response — accept unique insights, reject when it lacks project context.
 
+**Gemini output rule:** Extract 2-3 key points for the checkpoint. Full response stays in `gemini-factcheck.md` — user can request via option.
+
 **Step 3 — Checkpoint:**
 ```
 AskUserQuestion:
-  question: "Factcheck complete. Self-check: [summary]. Gemini review: [key points]. [N issues total]."
+  question: "Factcheck complete. Self-check: [pass/fail summary]. Gemini flagged: [2-3 key points]. Full review: experiments/{NNN}/gemini-factcheck.md"
   options:
     - "Issues are minor, proceed to TEST"
+    - "Show full Gemini review"
     - "Fix issues and re-check"
     - "Critical issue — revise PLAN"
-    - "Show me full Gemini review"
 ```
 
 ---
